@@ -1,0 +1,12 @@
+# IDE / Editor
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Context-mode (local)
+.github/context-mode/content/
+.github/context-mode/sessions/

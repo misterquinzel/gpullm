@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GPUs para LLMs Locais — 2026</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    color-scheme: dark light;
+    --bg: #0f0f0f;
+    --text: #e8e6e0;
+    --text-dim: #666;
+    --text-faint: #555;
+    --line-strong: #2a2a2a;
+    --line-soft: #1c1c1c;
+    --row-hover: #161616;
+
+    --accent-green: #c8f0a0;
+    --accent-blue: #8fc8e8;
+    --accent-orange: #d4933a;
+    --neutral-muted: #444;
+
+    --badge-entry-bg: #1a2e10;
+    --badge-entry-fg: #7cc44e;
+    --badge-entry-bd: #2d4a1c;
+
+    --badge-mid-bg: #102030;
+    --badge-mid-fg: #4ea8e8;
+    --badge-mid-bd: #1a3a52;
+
+    --badge-high-bg: #2e1f08;
+    --badge-high-fg: #d4933a;
+    --badge-high-bd: #4a3012;
+
+    --badge-top-bg: #1e102e;
+    --badge-top-fg: #a87cd4;
+    --badge-top-bd: #321a4a;
+  }
+
+  @media (prefers-color-scheme: light) {
+    :root {
+      --bg: #f7f6f1;
+      --text: #1f1f1b;
+      --text-dim: #5d5a50;
+      --text-faint: #6b675c;
+      --line-strong: #d7d3c8;
+      --line-soft: #e2dfd5;
+      --row-hover: #efede4;
+
+      --accent-green: #497a2a;
+      --accent-blue: #2f678a;
+      --accent-orange: #9a5f1f;
+      --neutral-muted: #7a7569;
+
+      --badge-entry-bg: #e6f0dd;
+      --badge-entry-fg: #46762b;
+      --badge-entry-bd: #bcd2aa;
+
+      --badge-mid-bg: #deebf4;
+      --badge-mid-fg: #2f668b;
+      --badge-mid-bd: #b4cada;
+
+      --badge-high-bg: #f3e9da;
+      --badge-high-fg: #91571b;
+      --badge-high-bd: #dbc3a6;
+
+      --badge-top-bg: #ede3f7;
+      --badge-top-fg: #65458d;
+      --badge-top-bd: #c8b2df;
+    }
+  }
+
+  :root[data-theme='dark'] {
+    color-scheme: dark;
+    --bg: #0f0f0f;
+    --text: #e8e6e0;
+    --text-dim: #666;
+    --text-faint: #555;
+    --line-strong: #2a2a2a;
+    --line-soft: #1c1c1c;
+    --row-hover: #161616;
+
+    --accent-green: #c8f0a0;
+    --accent-blue: #8fc8e8;
+    --accent-orange: #d4933a;
+    --neutral-muted: #444;
+
+    --badge-entry-bg: #1a2e10;
+    --badge-entry-fg: #7cc44e;
+    --badge-entry-bd: #2d4a1c;
+
+    --badge-mid-bg: #102030;
+    --badge-mid-fg: #4ea8e8;
+    --badge-mid-bd: #1a3a52;
+
+    --badge-high-bg: #2e1f08;
+    --badge-high-fg: #d4933a;
+    --badge-high-bd: #4a3012;
+
+    --badge-top-bg: #1e102e;
+    --badge-top-fg: #a87cd4;
+    --badge-top-bd: #321a4a;
+  }
+
+  :root[data-theme='light'] {
+    color-scheme: light;
+    --bg: #f7f6f1;
+    --text: #1f1f1b;
+    --text-dim: #5d5a50;
+    --text-faint: #6b675c;
+    --line-strong: #d7d3c8;
+    --line-soft: #e2dfd5;
+    --row-hover: #efede4;
+
+    --accent-green: #497a2a;
+    --accent-blue: #2f678a;
+    --accent-orange: #9a5f1f;
+    --neutral-muted: #7a7569;
+
+    --badge-entry-bg: #e6f0dd;
+    --badge-entry-fg: #46762b;
+    --badge-entry-bd: #bcd2aa;
+
+    --badge-mid-bg: #deebf4;
+    --badge-mid-fg: #2f668b;
+    --badge-mid-bd: #b4cada;
+
+    --badge-high-bg: #f3e9da;
+    --badge-high-fg: #91571b;
+    --badge-high-bd: #dbc3a6;
+
+    --badge-top-bg: #ede3f7;
+    --badge-top-fg: #65458d;
+    --badge-top-bd: #c8b2df;
+  }
+
+  body {
+    font-family: 'IBM Plex Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 48px 24px;
+  }
+
+  .container { max-width: 1000px; margin: 0 auto; }
+
+  .header { margin-bottom: 36px; }
+  .header h1 {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 13px;
+    font-weight: 400;
+    color: var(--text-dim);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+  .header h2 {
+    font-size: 28px;
+    font-weight: 300;
+    color: var(--text);
+    line-height: 1.2;
+  }
+  .header h2 strong { font-weight: 500; color: var(--accent-green); }
+
+  .note {
+    font-size: 12px;
+    color: var(--text-faint);
+    margin-top: 10px;
+    font-family: 'IBM Plex Mono', monospace;
+  }
+
+  .theme-toggle {
+    margin-top: 14px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 10px;
+    border: 1px solid var(--line-strong);
+    background: transparent;
+    color: var(--text-faint);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: background-color 120ms ease, color 120ms ease, border-color 120ms ease;
+  }
+  .theme-toggle:hover {
+    background: var(--row-hover);
+    color: var(--text);
+  }
+  .theme-toggle:focus-visible {
+    outline: 2px solid var(--accent-blue);
+    outline-offset: 2px;
+  }
+
+  .table-wrap { overflow-x: auto; margin-top: 8px; }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+
+  thead tr {
+    border-bottom: 1px solid var(--line-strong);
+  }
+
+  th {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    font-weight: 400;
+    color: var(--text-faint);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 10px 14px;
+    text-align: left;
+    white-space: nowrap;
+  }
+  th.right { text-align: right; }
+
+  td {
+    padding: 14px 14px;
+    border-bottom: 1px solid var(--line-soft);
+    vertical-align: middle;
+    color: var(--text-dim);
+    line-height: 1.4;
+  }
+  td.right { text-align: right; font-family: 'IBM Plex Mono', monospace; }
+
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: var(--row-hover); }
+
+  .badge {
+    display: inline-block;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 9px;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 3px 8px;
+    border-radius: 2px;
+    white-space: nowrap;
+  }
+  .b-entry  { background: var(--badge-entry-bg); color: var(--badge-entry-fg); border: 1px solid var(--badge-entry-bd); }
+  .b-mid    { background: var(--badge-mid-bg); color: var(--badge-mid-fg); border: 1px solid var(--badge-mid-bd); }
+  .b-high   { background: var(--badge-high-bg); color: var(--badge-high-fg); border: 1px solid var(--badge-high-bd); }
+  .b-top    { background: var(--badge-top-bg); color: var(--badge-top-fg); border: 1px solid var(--badge-top-bd); }
+
+  .gpu-name { font-weight: 500; color: var(--text); font-size: 13px; }
+  .gpu-sub  { font-size: 11px; color: var(--text-faint); margin-top: 2px; font-family: 'IBM Plex Mono', monospace; }
+
+  .tok-val { font-family: 'IBM Plex Mono', monospace; font-weight: 500; color: var(--accent-green); }
+  .tok-na  { font-family: 'IBM Plex Mono', monospace; color: var(--neutral-muted); }
+  .tok-mid { font-family: 'IBM Plex Mono', monospace; color: var(--accent-blue); }
+
+  .price-val { font-family: 'IBM Plex Mono', monospace; font-weight: 500; color: var(--accent-orange); font-size: 12px; }
+
+  .model-tag { font-size: 11px; color: var(--text-dim); font-family: 'IBM Plex Mono', monospace; }
+
+  .footer {
+    margin-top: 24px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: var(--neutral-muted);
+    line-height: 1.7;
+    border-top: 1px solid var(--line-soft);
+    padding-top: 16px;
+  }
+  .footer span { color: var(--accent-green); }
+
+  .legend {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+    margin-top: 20px;
+    margin-bottom: 28px;
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 11px;
+    color: var(--text-faint);
+    font-family: 'IBM Plex Mono', monospace;
+  }
+  .legend-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <h1>// gpu-llm-benchmark · abril 2026</h1>
+    <h2>GPUs para <strong>LLMs Locais</strong><br>guia de custo-benefício</h2>
+    <p class="note">quantização Q4_K_M · inferência via llama.cpp / Ollama</p>
+    <button id="theme-toggle" class="theme-toggle" type="button" aria-label="Alternar tema">Alternar tema</button>
+  </div>
+
+  <div class="legend">
+    <div class="legend-item"><div class="legend-dot" style="background:#7cc44e"></div>Iniciante</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#4ea8e8"></div>Intermediário</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#d4933a"></div>Alto desempenho</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#a87cd4"></div>Top de linha</div>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Nível</th>
+          <th>GPU</th>
+          <th class="right">VRAM</th>
+          <th>Modelos suportados</th>
+          <th class="right">tok/s · 7–8B</th>
+          <th class="right">tok/s · 13–14B</th>
+          <th class="right">tok/s · 32B Q4</th>
+          <th class="right">Preço aprox.</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="badge b-entry">Iniciante</span></td>
+          <td>
+            <div class="gpu-name">Intel Arc B580</div>
+            <div class="gpu-sub">GDDR6 · XMX engines</div>
+          </td>
+          <td class="right tok-mid">12 GB</td>
+          <td><span class="model-tag">até 13B Q4</span></td>
+          <td class="right tok-val">~62</td>
+          <td class="right tok-mid">~20–30</td>
+          <td class="right tok-na">—</td>
+          <td class="right price-val">~US$ 249</td>
+        </tr>
+        <tr>
+          <td><span class="badge b-mid">Intermediário</span></td>
+          <td>
+            <div class="gpu-name">RTX 4060 Ti 16 GB</div>
+            <div class="gpu-sub">GDDR6 · Ada Lovelace</div>
+          </td>
+          <td class="right tok-mid">16 GB</td>
+          <td><span class="model-tag">até 14–27B Q4</span></td>
+          <td class="right tok-val">~70–90</td>
+          <td class="right tok-val">~35–50</td>
+          <td class="right tok-mid">~10–15</td>
+          <td class="right price-val">~US$ 350</td>
+        </tr>
+        <tr>
+          <td><span class="badge b-mid">Intermediário</span></td>
+          <td>
+            <div class="gpu-name">AMD RX 7900 XTX</div>
+            <div class="gpu-sub">GDDR6 · RDNA 3 · ROCm 7.x</div>
+          </td>
+          <td class="right tok-mid">24 GB</td>
+          <td><span class="model-tag">até 70B Q4 (Linux)</span></td>
+          <td class="right tok-val">~90–110</td>
+          <td class="right tok-val">~50–65</td>
+          <td class="right tok-val">~25–35</td>
+          <td class="right price-val">~US$ 700 usado</td>
+        </tr>
+        <tr>
+          <td><span class="badge b-high">Alto desempenho</span></td>
+          <td>
+            <div class="gpu-name">RTX 4090 <span style="font-weight:300;font-size:11px;color:var(--text-dim)">(usada)</span></div>
+            <div class="gpu-sub">GDDR6X · Ada Lovelace</div>
+          </td>
+          <td class="right tok-mid">24 GB</td>
+          <td><span class="model-tag">até 32B confortável</span></td>
+          <td class="right tok-val">~110–130</td>
+          <td class="right tok-val">~60–80</td>
+          <td class="right tok-val">~34</td>
+          <td class="right price-val">~US$ 1.600</td>
+        </tr>
+        <tr>
+          <td><span class="badge b-top">Top de linha</span></td>
+          <td>
+            <div class="gpu-name">RTX 5090</div>
+            <div class="gpu-sub">GDDR7 · Blackwell · FP4</div>
+          </td>
+          <td class="right tok-mid">32 GB</td>
+          <td><span class="model-tag">até 70B Q4 solo</span></td>
+          <td class="right tok-val">~145–185</td>
+          <td class="right tok-val">~90–110</td>
+          <td class="right tok-val">~45–52</td>
+          <td class="right price-val">~US$ 1.999+</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="footer">
+    <span>// referência de leitura:</span> velocidade humana ≈ 5 tok/s · usável ≥ 10 tok/s · "instantâneo" ≥ 50 tok/s<br>
+    valores variam por modelo, contexto e configuração do sistema · contextos longos (32K+) reduzem velocidade significativamente
+  </div>
+</div>
+<script>
+  (() => {
+    const storageKey = 'gpu-llm-theme';
+    const root = document.documentElement;
+    const toggleBtn = document.getElementById('theme-toggle');
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: light)');
+
+    const getSystemTheme = () => (mediaQuery.matches ? 'light' : 'dark');
+
+    const updateButtonLabel = (theme) => {
+      if (!toggleBtn) return;
+      const nextMode = theme === 'dark' ? 'claro' : 'escuro';
+      const label = `Alternar para modo ${nextMode}`;
+      toggleBtn.textContent = label;
+      toggleBtn.setAttribute('aria-label', label);
+    };
+
+    const applyTheme = (theme, persist = false) => {
+      root.setAttribute('data-theme', theme);
+      if (persist) {
+        localStorage.setItem(storageKey, theme);
+      }
+      updateButtonLabel(theme);
+    };
+
+    const savedTheme = localStorage.getItem(storageKey);
+    if (savedTheme === 'light' || savedTheme === 'dark') {
+      applyTheme(savedTheme);
+    } else {
+      applyTheme(getSystemTheme());
+    }
+
+    if (toggleBtn) {
+      toggleBtn.addEventListener('click', () => {
+        const currentTheme = root.getAttribute('data-theme') || getSystemTheme();
+        const nextTheme = currentTheme === 'dark' ? 'light' : 'dark';
+        applyTheme(nextTheme, true);
+      });
+    }
+
+    mediaQuery.addEventListener('change', (event) => {
+      const persisted = localStorage.getItem(storageKey);
+      if (!persisted) {
+        applyTheme(event.matches ? 'light' : 'dark');
+      }
+    });
+  })();
+</script>
+</body>
+</html>
